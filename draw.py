@@ -4,40 +4,58 @@ import pygame
 from pygame.locals import *
 import time, sys, json
 
+
+SCALE = 2
+
 white = (255,255,255)
 black = (0,0,0)
 red = (255, 0, 0)
+green = (0, 255, 0)
+blue = (0, 0, 255)
 grey = (100,100,100)
 
 class Pane(object):
     def __init__(self):
         pygame.init()
         pygame.display.set_caption('Simulation')
-        self.screen = pygame.display.set_mode((1000,1000), 0, 32)
+        self.screen = pygame.display.set_mode((400*SCALE,400*SCALE), 0, 32)
         self.screen.fill((white))
         pygame.display.flip()
 
 
     def drawAgent(self, agent):
-    	colour = black
-        render_view_circle = False
-        render_view_line = False
-        render_fitness = False
+    	colour = green
+        render_repulsion_circle = False
+        render_view_line = True
+        render_fitness = True
+        render_family = False
 
-    	x = agent['p']['X']
-    	y = agent['p']['Y']
+        if agent['t'] == 2:
+            colour = red
+        elif agent['t'] == 1:
+            colour = blue
+
+    	x = agent['p']['X'] * SCALE
+    	y = agent['p']['Y'] * SCALE
 
         nx = agent['v']['X'] + x
         ny = agent['v']['Y'] + y
         
-        if render_view_circle:
-            pygame.draw.circle(self.screen, (grey), (int(x), int(y)), 100, 1)
+        if render_repulsion_circle:
+            pygame.draw.circle(self.screen, (grey), (int(x), int(y)), 1 * SCALE, 1)
         if render_fitness:
             myfont = pygame.font.SysFont("monospace", 15)
             label = myfont.render(str(agent['f']), 1, black)
             self.screen.blit(label, (x, y))
+        if render_family:
+            myfont = pygame.font.SysFont("monospace", 15)
+            label = myfont.render(str(agent['t']), 1, black)
+            self.screen.blit(label, (x, y))
 
-        pygame.draw.circle(self.screen, (colour), (int(x), int(y)), 5)
+        try:
+            pygame.draw.circle(self.screen, (colour), (int(x), int(y)), 2)
+        except Exception, e:
+            print x, y
         if render_view_line:
             pygame.draw.line(self.screen, (colour), (x, y), (nx, ny))
 
@@ -49,7 +67,7 @@ class Pane(object):
 	    	for position in step:
 	    		self.drawAgent(position)
 	    	pygame.display.flip()
-	    	time.sleep(0.001)
+	    	time.sleep(0.05)
 	    	self.screen.fill(white)	
     	# raw_input()
 
