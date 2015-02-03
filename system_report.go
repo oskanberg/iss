@@ -13,17 +13,19 @@ var stepsRecorded int
 // keep allocated for smoother GC
 var newStep []SimpleAgent
 
-func Report(Population Population) {
-	newStep = make([]SimpleAgent, POPULATION_SIZE)
-	for i, agent := range Population.TypeA {
+func Report(population Population) {
+	numDead := len(population.TypeADead) + len(population.TypeBDead)
+	newStep = make([]SimpleAgent, POPULATION_SIZE-numDead)
+	for i, agent := range population.TypeA {
 		newStep[i] = *agent
 	}
-	for i, agent := range Population.TypeB {
-		newStep[len(Population.TypeA)+i] = *agent
+	for i, agent := range population.TypeB {
+		newStep[len(population.TypeA)+i] = *agent
 	}
-	for i, agent := range Population.Predators {
-		newStep[len(Population.TypeA)+len(Population.TypeB)+i] = *agent
+	for i, agent := range population.Predators {
+		newStep[len(population.TypeA)+len(population.TypeB)+i] = *agent
 	}
+
 	record = append(record, newStep)
 
 	stepsRecorded++

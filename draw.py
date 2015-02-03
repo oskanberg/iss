@@ -27,7 +27,7 @@ class Pane(object):
     	colour = green
         render_repulsion_circle = False
         render_view_line = True
-        render_fitness = True
+        render_fitness = False
         render_family = False
 
         if agent['t'] == 2:

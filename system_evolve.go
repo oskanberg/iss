@@ -15,7 +15,7 @@ func selectFitnessProportionate(sample []*SimpleAgent, highestFitness int) *Simp
 	}
 }
 
-func replaceSubspecies(subspecies []*SimpleAgent, dead []*SimpleAgent) {
+func replaceSubspecies(subspecies []*SimpleAgent, dead []*SimpleAgent) []*SimpleAgent {
 
 	var highestFitness int
 	for _, agent := range subspecies {
@@ -28,19 +28,22 @@ func replaceSubspecies(subspecies []*SimpleAgent, dead []*SimpleAgent) {
 	for i, _ := range dead {
 		replacements[i] = NewRandomSimpleAgent(dead[i].Family)
 		parent := selectFitnessProportionate(append(subspecies, dead...), highestFitness)
-		*replacements[i].genetics = *parent.genetics
+		*replacements[i].genetics = *parent.genetics.Mutated()
+
 	}
 
 	for _, r := range replacements {
 		subspecies = append(subspecies, r)
 	}
+
+	return subspecies
 }
 
-func Evolve(population Population) {
-	replaceSubspecies(population.TypeA, population.TypeADead)
-	replaceSubspecies(population.TypeB, population.TypeBDead)
+func Evolve(population *Population) {
+	population.TypeA = replaceSubspecies(population.TypeA, population.TypeADead)
+	population.TypeB = replaceSubspecies(population.TypeB, population.TypeBDead)
 
 	//clear dead
 	population.TypeADead = nil
-	population.TypeADead = nil
+	population.TypeBDead = nil
 }

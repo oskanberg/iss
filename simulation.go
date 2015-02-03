@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 	"runtime"
 	"time"
@@ -20,10 +21,34 @@ type MovementParameters struct {
 	AttractionRadiusSq  float64
 }
 
+var upperLimit float64 = VIEW_DISTANCE_SQUARED - STATIC_REPULSION_RADIUS_SQUARED
+
+func (s *MovementParameters) Mutated() *MovementParameters {
+	dOrientation := rand.Float64()*MUTATION_MOVEMENT - (MUTATION_MOVEMENT / 2)
+	dAttraction := rand.Float64()*MUTATION_MOVEMENT - (MUTATION_MOVEMENT / 2)
+
+	newOrientation := math.Mod(s.OrientationRadiusSq+dOrientation, upperLimit) + STATIC_REPULSION_RADIUS_SQUARED
+	newAttraction := math.Mod(s.AttractionRadiusSq+dAttraction, upperLimit) + STATIC_REPULSION_RADIUS_SQUARED
+	return &MovementParameters{
+		OrientationRadiusSq: newOrientation,
+		AttractionRadiusSq:  newAttraction,
+	}
+}
+
 type BehaviourParameters struct {
 	SameSpecies       MovementParameters
 	OtherSpecies      MovementParameters
 	PredatorRepulsion float64
+}
+
+func (s *BehaviourParameters) Mutated() *BehaviourParameters {
+	dRepulsion := (rand.Float64() * MUTATION_PREDATOR_REPULSION) - (MUTATION_PREDATOR_REPULSION / 2)
+	newRepulsion := math.Mod(s.PredatorRepulsion+dRepulsion, 1.0)
+	return &BehaviourParameters{
+		SameSpecies:       *s.SameSpecies.Mutated(),
+		OtherSpecies:      *s.OtherSpecies.Mutated(),
+		PredatorRepulsion: newRepulsion,
+	}
 }
 
 type SimpleAgent struct {
@@ -95,12 +120,10 @@ func main() {
 		population.Predators[i] = NewRandomSimpleAgent(PRED)
 	}
 
-	fmt.Println(population.TypeA)
-
 	for i := 0; i < SIMULATION_STEPS; i++ {
-		if i%1000 == 0 {
+		if i > 0 && i%1000 == 0 {
 			fmt.Println("step", i)
-			Evolve(population)
+			Evolve(&population)
 		}
 		Move(&population)
 		UpdatePosition(population)
