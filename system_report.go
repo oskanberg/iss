@@ -29,7 +29,7 @@ func Report(population Population) {
 	record = append(record, newStep)
 
 	stepsRecorded++
-	if stepsRecorded%LOG_WRITE_FREQ == 0 {
+	if stepsRecorded%POSITION_LOG_INTERVAL == 0 {
 		fmt.Println("Writing to", strconv.Itoa(stepsRecorded), ".json")
 		jsonEnc, err := json.Marshal(record)
 		if err != nil {

@@ -2,8 +2,7 @@
 
 import pygame
 from pygame.locals import *
-import time, sys, json
-
+import time, sys, json, math
 
 SCALE = 2
 
@@ -25,10 +24,12 @@ class Pane(object):
 
     def drawAgent(self, agent):
     	colour = green
-        render_repulsion_circle = False
+        render_orientation = False
+        render_attraction = False
         render_view_line = True
         render_fitness = False
         render_family = False
+        render_ap = False
 
         if agent['t'] == 2:
             colour = red
@@ -41,8 +42,26 @@ class Pane(object):
         nx = agent['v']['X'] + x
         ny = agent['v']['Y'] + y
         
-        if render_repulsion_circle:
-            pygame.draw.circle(self.screen, (grey), (int(x), int(y)), 1 * SCALE, 1)
+        if render_orientation:
+            try:
+                pygame.draw.circle(self.screen, (blue), (int(x), int(y)), int(math.sqrt(agent['g']['os']['o'])) * SCALE, 1)
+            except ValueError, e:
+                print agent['g']['os']['o']
+            try:
+                pygame.draw.circle(self.screen, (green), (int(x), int(y)), int(math.sqrt(agent['g']['ss']['o'])) * SCALE, 1)
+            except ValueError, e:
+                print agent['g']['ss']['o']
+
+        if render_attraction:
+            try:
+                pygame.draw.circle(self.screen, (blue), (int(x), int(y)), int(math.sqrt(agent['g']['os']['a'])) * SCALE, 1)
+            except ValueError, e:
+                print agent['g']['os']['a']
+            try:
+                pygame.draw.circle(self.screen, (green), (int(x), int(y)), int(math.sqrt(agent['g']['ss']['a'])) * SCALE, 1)
+            except ValueError, e:
+                print agent['g']['ss']['a']
+            
         if render_fitness:
             myfont = pygame.font.SysFont("monospace", 15)
             label = myfont.render(str(agent['f']), 1, black)
@@ -51,6 +70,11 @@ class Pane(object):
             myfont = pygame.font.SysFont("monospace", 15)
             label = myfont.render(str(agent['t']), 1, black)
             self.screen.blit(label, (x, y))
+        if render_ap:
+            myfont = pygame.font.SysFont("monospace", 15)
+            label = myfont.render(str(agent['g']['pr']), 1, black)
+            self.screen.blit(label, (x, y))
+
 
         try:
             pygame.draw.circle(self.screen, (colour), (int(x), int(y)), 2)

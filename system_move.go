@@ -1,6 +1,10 @@
 package main
 
-import "github.com/oskanberg/go-vector"
+import (
+	"math/rand"
+
+	"github.com/oskanberg/go-vector"
+)
 
 var agentRepulsionVector *vector.Vector2D
 var agentOrientationVector *vector.Vector2D
@@ -11,9 +15,9 @@ func updateVectorsForPrey(agent, other *SimpleAgent, repulsion, orientation, att
 	var behaviour *MovementParameters
 
 	if agent.Family == other.Family {
-		behaviour = &agent.genetics.SameSpecies
+		behaviour = &agent.Genetics.SameSpecies
 	} else {
-		behaviour = &agent.genetics.OtherSpecies
+		behaviour = &agent.Genetics.OtherSpecies
 	}
 
 	differenceVector := agent.Position.WrappedDistanceVector(&other.Position, SIMULATION_SPACE_SIZE, SIMULATION_SPACE_SIZE)
@@ -64,7 +68,8 @@ func movePrey(agent *SimpleAgent, population Population) {
 	if agentRepulsionVector.MagnitudeSquared() > 0 {
 		agent.VelocityNext = *agentRepulsionVector.Normalised().Multiplied(PREY_SPEED)
 	} else {
-		antiPred := antiPredatorVector.Normalised().Multiplied(agent.genetics.PredatorRepulsion)
+		agentAttractionVector = agentAttractionVector.Multiplied(1 - agent.Genetics.PredatorRepulsion)
+		antiPred := antiPredatorVector.Normalised().Multiplied(agent.Genetics.PredatorRepulsion)
 		updateVector := agentOrientationVector.Add(agentAttractionVector).Add(antiPred).Normalised().Multiplied(PREY_SPEED)
 		agent.VelocityNext = *updateVector
 	}
@@ -76,9 +81,14 @@ func movePredator(agent *SimpleAgent, population *Population) {
 	var nearest *SimpleAgent
 	var shortestDistance float64 = 10000000
 
+	var inView float64 = 0
+
 	for _, prey := range population.TypeA {
 		differenceVector = agent.Position.WrappedDistanceVector(&prey.Position, SIMULATION_SPACE_SIZE, SIMULATION_SPACE_SIZE)
 		difference := differenceVector.MagnitudeSquared()
+		if difference < VIEW_DISTANCE_SQUARED {
+			inView++
+		}
 		if difference < shortestDistance {
 			shortestDistance = difference
 			updateVector = differenceVector
@@ -89,6 +99,9 @@ func movePredator(agent *SimpleAgent, population *Population) {
 	for _, prey := range population.TypeB {
 		differenceVector = agent.Position.WrappedDistanceVector(&prey.Position, SIMULATION_SPACE_SIZE, SIMULATION_SPACE_SIZE)
 		difference := differenceVector.MagnitudeSquared()
+		if difference < VIEW_DISTANCE_SQUARED {
+			inView++
+		}
 		if difference < shortestDistance {
 			shortestDistance = difference
 			updateVector = differenceVector
@@ -96,7 +109,7 @@ func movePredator(agent *SimpleAgent, population *Population) {
 		}
 	}
 
-	if updateVector.Magnitude() < PREDATOR_SPEED {
+	if updateVector.Magnitude() < PREDATOR_SPEED && rand.Float64() < 1/inView {
 		Kill(population, nearest)
 	}
 	agent.VelocityNext = *updateVector.Normalised().Multiplied(PREDATOR_SPEED)

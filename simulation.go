@@ -17,8 +17,8 @@ const (
 )
 
 type MovementParameters struct {
-	OrientationRadiusSq float64
-	AttractionRadiusSq  float64
+	OrientationRadiusSq float64 `json:"o"`
+	AttractionRadiusSq  float64 `json:"a"`
 }
 
 var upperLimit float64 = VIEW_DISTANCE_SQUARED - STATIC_REPULSION_RADIUS_SQUARED
@@ -36,9 +36,9 @@ func (s *MovementParameters) Mutated() *MovementParameters {
 }
 
 type BehaviourParameters struct {
-	SameSpecies       MovementParameters
-	OtherSpecies      MovementParameters
-	PredatorRepulsion float64
+	SameSpecies       MovementParameters `json:"ss"`
+	OtherSpecies      MovementParameters `json:"os"`
+	PredatorRepulsion float64            `json:"pr"`
 }
 
 func (s *BehaviourParameters) Mutated() *BehaviourParameters {
@@ -52,14 +52,12 @@ func (s *BehaviourParameters) Mutated() *BehaviourParameters {
 }
 
 type SimpleAgent struct {
-	Position     vector.Vector2D `json:"p"`
-	Velocity     vector.Vector2D `json:"v"`
-	VelocityNext vector.Vector2D `json:"vn"`
-	Fitness      int             `json:"f"`
-	Family       int             `json:"t"`
-
-	alive    bool
-	genetics *BehaviourParameters
+	Position     vector.Vector2D      `json:"p"`
+	Velocity     vector.Vector2D      `json:"v"`
+	VelocityNext vector.Vector2D      `json:"vn"`
+	Fitness      int                  `json:"f"`
+	Family       int                  `json:"t"`
+	Genetics     *BehaviourParameters `json:"g"`
 }
 
 type Population struct {
@@ -96,8 +94,7 @@ func NewRandomSimpleAgent(family int) *SimpleAgent {
 		VelocityNext: randomVelocity,
 		Fitness:      0,
 		Family:       family,
-		alive:        true,
-		genetics:     RandomBehaviours(),
+		Genetics:     RandomBehaviours(),
 	}
 }
 
@@ -125,6 +122,7 @@ func main() {
 			fmt.Println("step", i)
 			Evolve(&population)
 		}
+		Statistics(population)
 		Move(&population)
 		UpdatePosition(population)
 		UpdateFitness(population)

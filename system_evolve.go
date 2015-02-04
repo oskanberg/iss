@@ -28,7 +28,7 @@ func replaceSubspecies(subspecies []*SimpleAgent, dead []*SimpleAgent) []*Simple
 	for i, _ := range dead {
 		replacements[i] = NewRandomSimpleAgent(dead[i].Family)
 		parent := selectFitnessProportionate(append(subspecies, dead...), highestFitness)
-		*replacements[i].genetics = *parent.genetics.Mutated()
+		*replacements[i].Genetics = *parent.Genetics.Mutated()
 
 	}
 
