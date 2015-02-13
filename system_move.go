@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math"
 	"math/rand"
 
 	"github.com/oskanberg/go-vector"
@@ -14,14 +15,22 @@ var antiPredatorVector *vector.Vector2D
 func updateVectorsForPrey(agent, other *SimpleAgent, repulsion, orientation, attraction *vector.Vector2D) {
 	var behaviour *MovementParameters
 
-	if agent.Family == other.Family {
-		behaviour = &agent.Genetics.SameSpecies
-	} else {
-		behaviour = &agent.Genetics.OtherSpecies
-	}
-
 	differenceVector := agent.Position.WrappedDistanceVector(&other.Position, SIMULATION_SPACE_SIZE, SIMULATION_SPACE_SIZE)
 	difference := differenceVector.MagnitudeSquared()
+
+	angle := agent.Velocity.Dot(differenceVector.Normalised())
+	if difference < PREY_VIEW_DISTANCE_SQUARED && angle < BLIND_ANGLE {
+		if agent.Family == other.Family {
+			behaviour = &agent.Genetics.SameSpecies
+			agent.visibleSame++
+		} else {
+			behaviour = &agent.Genetics.OtherSpecies
+			agent.visibleOther++
+		}
+	} else {
+		return
+	}
+
 	if difference < STATIC_REPULSION_RADIUS_SQUARED {
 		// repulsion
 		*repulsion = *repulsion.Add(differenceVector.Normalised())
@@ -35,13 +44,17 @@ func updateVectorsForPrey(agent, other *SimpleAgent, repulsion, orientation, att
 }
 
 func updateVectorsForPredator(agent, other *SimpleAgent, antiPredator *vector.Vector2D) {
-	differenceVector := agent.Position.WrappedDistanceVector(&other.Position, SIMULATION_SPACE_SIZE, SIMULATION_SPACE_SIZE)
-	if differenceVector.MagnitudeSquared() < VIEW_DISTANCE_SQUARED {
-		*antiPredator = *antiPredator.Add(differenceVector.Normalised().Multiplied(-1))
+	differenceVector := other.Position.WrappedDistanceVector(&agent.Position, SIMULATION_SPACE_SIZE, SIMULATION_SPACE_SIZE)
+	angle := agent.Velocity.Dot(differenceVector.Normalised())
+	if differenceVector.MagnitudeSquared() < PREY_VIEW_DISTANCE_SQUARED && angle < BLIND_ANGLE {
+		*antiPredator = *antiPredator.Add(differenceVector.Normalised())
 	}
 }
 
 func movePrey(agent *SimpleAgent, population Population) {
+	agent.visibleOther = 0
+	agent.visibleSame = 0
+
 	agentRepulsionVector = vector.NewVector2d(0, 0)
 	agentOrientationVector = vector.NewVector2d(0, 0)
 	agentAttractionVector = vector.NewVector2d(0, 0)
@@ -66,12 +79,25 @@ func movePrey(agent *SimpleAgent, population Population) {
 	}
 
 	if agentRepulsionVector.MagnitudeSquared() > 0 {
-		agent.VelocityNext = *agentRepulsionVector.Normalised().Multiplied(PREY_SPEED)
+		agent.VelocityNext = *agentRepulsionVector.Normalised()
 	} else {
-		agentAttractionVector = agentAttractionVector.Multiplied(1 - agent.Genetics.PredatorRepulsion)
 		antiPred := antiPredatorVector.Normalised().Multiplied(agent.Genetics.PredatorRepulsion)
-		updateVector := agentOrientationVector.Add(agentAttractionVector).Add(antiPred).Normalised().Multiplied(PREY_SPEED)
-		agent.VelocityNext = *updateVector
+		updateVector := agentOrientationVector.Normalised().Add(agentAttractionVector.Normalised()).Add(antiPred).Normalised()
+
+		angle := math.Atan2(agent.Velocity.X*updateVector.Y-agent.Velocity.Y*updateVector.X, agent.Velocity.X*updateVector.X+agent.Velocity.Y*updateVector.Y)
+		if math.Abs(angle) > MAX_TURN_ANGLE_PREY {
+			if angle > 0 {
+				updateVector = updateVector.Rotated(MAX_TURN_ANGLE_PREY - angle)
+			} else {
+				updateVector = updateVector.Rotated(-MAX_TURN_ANGLE_PREY - angle)
+			}
+		}
+
+		if updateVector.Magnitude() > 0 {
+			agent.VelocityNext = *updateVector.Normalised()
+		} else {
+			agent.VelocityNext = agent.Velocity
+		}
 	}
 }
 
@@ -86,7 +112,7 @@ func movePredator(agent *SimpleAgent, population *Population) {
 	for _, prey := range population.TypeA {
 		differenceVector = agent.Position.WrappedDistanceVector(&prey.Position, SIMULATION_SPACE_SIZE, SIMULATION_SPACE_SIZE)
 		difference := differenceVector.MagnitudeSquared()
-		if difference < VIEW_DISTANCE_SQUARED {
+		if difference < PREDATOR_VIEW_DISTANCE_SQUARED {
 			inView++
 		}
 		if difference < shortestDistance {
@@ -99,7 +125,7 @@ func movePredator(agent *SimpleAgent, population *Population) {
 	for _, prey := range population.TypeB {
 		differenceVector = agent.Position.WrappedDistanceVector(&prey.Position, SIMULATION_SPACE_SIZE, SIMULATION_SPACE_SIZE)
 		difference := differenceVector.MagnitudeSquared()
-		if difference < VIEW_DISTANCE_SQUARED {
+		if difference < PREDATOR_VIEW_DISTANCE_SQUARED {
 			inView++
 		}
 		if difference < shortestDistance {
@@ -109,10 +135,21 @@ func movePredator(agent *SimpleAgent, population *Population) {
 		}
 	}
 
-	if updateVector.Magnitude() < PREDATOR_SPEED && rand.Float64() < 1/inView {
+	if updateVector.Magnitude() < PREDATOR_SPEED {
 		Kill(population, nearest)
+		agent.Position = *vector.NewVector2d(rand.Float64()*SIMULATION_SPACE_SIZE, rand.Float64()*SIMULATION_SPACE_SIZE)
 	}
-	agent.VelocityNext = *updateVector.Normalised().Multiplied(PREDATOR_SPEED)
+
+	angle := math.Atan2(agent.Velocity.X*updateVector.Y-agent.Velocity.Y*updateVector.X, agent.Velocity.X*updateVector.X+agent.Velocity.Y*updateVector.Y)
+	if math.Abs(angle) > MAX_TURN_ANGLE_PREDATOR {
+		if angle > 0 {
+			updateVector = updateVector.Rotated(MAX_TURN_ANGLE_PREDATOR - angle)
+		} else {
+			updateVector = updateVector.Rotated(-MAX_TURN_ANGLE_PREDATOR - angle)
+		}
+	}
+
+	agent.VelocityNext = *updateVector.Normalised()
 }
 
 func Move(population *Population) {
@@ -130,14 +167,14 @@ func Move(population *Population) {
 func UpdatePosition(population Population) {
 	for _, agent := range population.TypeA {
 		agent.Velocity = agent.VelocityNext
-		agent.Position = *agent.Position.Add(&agent.Velocity).Wrap(SIMULATION_SPACE_SIZE, SIMULATION_SPACE_SIZE)
+		agent.Position = *agent.Position.Add(agent.Velocity.Multiplied(PREY_SPEED)).Wrap(SIMULATION_SPACE_SIZE, SIMULATION_SPACE_SIZE)
 	}
 	for _, agent := range population.TypeB {
 		agent.Velocity = agent.VelocityNext
-		agent.Position = *agent.Position.Add(&agent.Velocity).Wrap(SIMULATION_SPACE_SIZE, SIMULATION_SPACE_SIZE)
+		agent.Position = *agent.Position.Add(agent.Velocity.Multiplied(PREY_SPEED)).Wrap(SIMULATION_SPACE_SIZE, SIMULATION_SPACE_SIZE)
 	}
 	for _, agent := range population.Predators {
 		agent.Velocity = agent.VelocityNext
-		agent.Position = *agent.Position.Add(&agent.Velocity).Wrap(SIMULATION_SPACE_SIZE, SIMULATION_SPACE_SIZE)
+		agent.Position = *agent.Position.Add(agent.Velocity.Multiplied(PREDATOR_SPEED)).Wrap(SIMULATION_SPACE_SIZE, SIMULATION_SPACE_SIZE)
 	}
 }

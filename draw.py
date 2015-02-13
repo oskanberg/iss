@@ -4,7 +4,7 @@ import pygame
 from pygame.locals import *
 import time, sys, json, math
 
-SCALE = 2
+SCALE = 1
 
 white = (255,255,255)
 black = (0,0,0)
@@ -17,7 +17,7 @@ class Pane(object):
     def __init__(self):
         pygame.init()
         pygame.display.set_caption('Simulation')
-        self.screen = pygame.display.set_mode((400*SCALE,400*SCALE), 0, 32)
+        self.screen = pygame.display.set_mode((800*SCALE,800*SCALE), 0, 32)
         self.screen.fill((white))
         pygame.display.flip()
 
@@ -43,24 +43,56 @@ class Pane(object):
         ny = agent['v']['Y'] + y
         
         if render_orientation:
+            r = 0
             try:
-                pygame.draw.circle(self.screen, (blue), (int(x), int(y)), int(math.sqrt(agent['g']['os']['o'])) * SCALE, 1)
-            except ValueError, e:
-                print agent['g']['os']['o']
+                r = agent['g']['os']['o']
+                if r > 0:
+                    r = int(math.sqrt(r))
+                if r < 1:
+                    r = 1   
+                pygame.draw.circle(self.screen, (red), (int(x), int(y)), r * SCALE, 1)
+            except Exception, e:
+                print e, agent
+            
             try:
-                pygame.draw.circle(self.screen, (green), (int(x), int(y)), int(math.sqrt(agent['g']['ss']['o'])) * SCALE, 1)
+                r = agent['g']['ss']['o']
+                if r > 0:
+                    r = int(math.sqrt(r))
+                if r < 1:
+                    r = 1  
+                pygame.draw.circle(self.screen, (green), (int(x), int(y)), r * SCALE, 1)
             except ValueError, e:
                 print agent['g']['ss']['o']
+            except TypeError, e:
+                pass
+                print agent
 
         if render_attraction:
             try:
-                pygame.draw.circle(self.screen, (blue), (int(x), int(y)), int(math.sqrt(agent['g']['os']['a'])) * SCALE, 1)
+                r = agent['g']['os']['a']
+                if r > 0:
+                    r = int(math.sqrt(r))
+                if r < 1:
+                    r = 1   
+                pygame.draw.circle(self.screen, (red), (int(x), int(y)),r * SCALE, 1)
             except ValueError, e:
-                print agent['g']['os']['a']
+                print agent['g']['os']['a'], e
+            except TypeError, e:
+                pass
+                print agent
+
             try:
-                pygame.draw.circle(self.screen, (green), (int(x), int(y)), int(math.sqrt(agent['g']['ss']['a'])) * SCALE, 1)
+                r = agent['g']['ss']['a']
+                if r > 0:
+                    r = int(math.sqrt(r))
+                if r < 1:
+                    r = 1            
+                pygame.draw.circle(self.screen, (green), (int(x), int(y)), r * SCALE, 1)
             except ValueError, e:
-                print agent['g']['ss']['a']
+                print agent['g']['ss']['a'], e
+            except TypeError, e:
+                pass
+                print agent
             
         if render_fitness:
             myfont = pygame.font.SysFont("monospace", 15)
@@ -91,7 +123,7 @@ class Pane(object):
 	    	for position in step:
 	    		self.drawAgent(position)
 	    	pygame.display.flip()
-	    	time.sleep(0.05)
+	    	time.sleep(0.02)
 	    	self.screen.fill(white)	
     	# raw_input()
 

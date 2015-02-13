@@ -39,7 +39,12 @@ func replaceSubspecies(subspecies []*SimpleAgent, dead []*SimpleAgent) []*Simple
 	return subspecies
 }
 
+var typeADead, typeBDead []int
+
 func Evolve(population *Population) {
+	typeADead = append(typeADead, len(population.TypeADead))
+	typeBDead = append(typeBDead, len(population.TypeBDead))
+
 	population.TypeA = replaceSubspecies(population.TypeA, population.TypeADead)
 	population.TypeB = replaceSubspecies(population.TypeB, population.TypeBDead)
 
