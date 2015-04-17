@@ -1,6 +1,10 @@
 package main
 
-import "math/rand"
+import (
+	"math/rand"
+
+	"github.com/oskanberg/go-vector"
+)
 
 func selectFitnessProportionate(sample []*SimpleAgent, highestFitness int) *SimpleAgent {
 	if highestFitness == 0 {
@@ -25,11 +29,10 @@ func replaceSubspecies(subspecies []*SimpleAgent, dead []*SimpleAgent) []*Simple
 	}
 
 	replacements := make([]*SimpleAgent, len(dead))
-	for i, _ := range dead {
+	for i := range dead {
 		replacements[i] = NewRandomSimpleAgent(dead[i].Family)
 		parent := selectFitnessProportionate(append(subspecies, dead...), highestFitness)
 		*replacements[i].Genetics = *parent.Genetics.Mutated()
-
 	}
 
 	for _, r := range replacements {
@@ -42,6 +45,18 @@ func replaceSubspecies(subspecies []*SimpleAgent, dead []*SimpleAgent) []*Simple
 var typeADead, typeBDead []int
 
 func Evolve(population *Population) {
+	// randomise location
+	for _, agent := range population.TypeA {
+		agent.Position = *vector.NewVector2d(rand.Float64()*SIMULATION_SPACE_SIZE, rand.Float64()*SIMULATION_SPACE_SIZE)
+		agent.Velocity = *vector.NewRandomUnitVector()
+		agent.VelocityNext = agent.Velocity
+	}
+	for _, agent := range population.TypeB {
+		agent.Position = *vector.NewVector2d(rand.Float64()*SIMULATION_SPACE_SIZE, rand.Float64()*SIMULATION_SPACE_SIZE)
+		agent.Velocity = *vector.NewRandomUnitVector()
+		agent.VelocityNext = agent.Velocity
+	}
+
 	typeADead = append(typeADead, len(population.TypeADead))
 	typeBDead = append(typeBDead, len(population.TypeBDead))
 

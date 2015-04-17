@@ -3,18 +3,19 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"os"
 )
 
 type GeneticsRecord struct {
-	Attraction  FloatRecord
-	Orientation FloatRecord
+	Attraction        FloatRecord
+	AttractionStdDev  FloatRecord
+	Orientation       FloatRecord
+	OrientationStdDev FloatRecord
 }
 
 type FloatRecord struct {
-	AverageOther float64 `json:"o"`
-	AverageSame  float64 `json:"s"`
+	Other float64 `json:"o"`
+	Same  float64 `json:"s"`
 }
 
 var geneticsA []GeneticsRecord = make([]GeneticsRecord, 0)
@@ -30,8 +31,8 @@ func meanNearby(subpopulation []*SimpleAgent) (float64, float64) {
 
 	var same, other float64
 	for _, agent := range subpopulation {
-		same += float64(agent.visibleSame)
-		other += float64(agent.visibleOther)
+		same += float64(agent.nearbySame)
+		other += float64(agent.nearbyOther)
 	}
 
 	same /= float64(len(subpopulation))
@@ -46,8 +47,8 @@ func totalOrientation(subpopulation []*SimpleAgent) (float64, float64) {
 
 	var same, other float64
 	for _, agent := range subpopulation {
-		same += math.Sqrt(float64(agent.Genetics.SameSpecies.OrientationRadiusSq))
-		other += math.Sqrt(float64(agent.Genetics.OtherSpecies.OrientationRadiusSq))
+		same += float64(agent.Genetics.SameSpecies.orientationRadius)
+		other += float64(agent.Genetics.OtherSpecies.orientationRadius)
 	}
 
 	return same, other
@@ -60,8 +61,8 @@ func totalAttraction(subpopulation []*SimpleAgent) (float64, float64) {
 
 	var same, other float64
 	for _, agent := range subpopulation {
-		same += math.Sqrt(float64(agent.Genetics.SameSpecies.AttractionRadiusSq))
-		other += math.Sqrt(float64(agent.Genetics.OtherSpecies.AttractionRadiusSq))
+		same += float64(agent.Genetics.SameSpecies.attractionRadius)
+		other += float64(agent.Genetics.OtherSpecies.attractionRadius)
 	}
 
 	return same, other
@@ -73,15 +74,15 @@ func getAverageGenetics(subpopulation []*SimpleAgent, dead []*SimpleAgent) Genet
 	dSame, dOther = totalAttraction(dead)
 	total = float64(len(subpopulation) + len(dead))
 	attraction := FloatRecord{
-		AverageOther: (other + dOther) / total,
-		AverageSame:  (same + dSame) / total,
+		Other: (other + dOther) / total,
+		Same:  (same + dSame) / total,
 	}
 
 	same, other = totalOrientation(subpopulation)
 	dSame, dOther = totalOrientation(dead)
 	orientation := FloatRecord{
-		AverageOther: (other + dOther) / total,
-		AverageSame:  (same + dSame) / total,
+		Other: (other + dOther) / total,
+		Same:  (same + dSame) / total,
 	}
 	r := GeneticsRecord{
 		Attraction:  attraction,
@@ -102,14 +103,14 @@ func RecordGenetics(population Population) {
 func RecordNearby(population Population) {
 	nearbySame, nearbyOther := meanNearby(population.TypeA)
 	nearbyA = append(nearbyA, FloatRecord{
-		AverageSame:  nearbySame,
-		AverageOther: nearbyOther,
+		Same:  nearbySame,
+		Other: nearbyOther,
 	})
 
 	nearbySame, nearbyOther = meanNearby(population.TypeB)
 	nearbyB = append(nearbyB, FloatRecord{
-		AverageSame:  nearbySame,
-		AverageOther: nearbyOther,
+		Same:  nearbySame,
+		Other: nearbyOther,
 	})
 }
 
@@ -124,7 +125,7 @@ var typeAFitness, typeBFitness []Stat
 func RecordFitness(population Population) {
 	// allFitness := make([]float64, len(population.TypeA)+len(population.TypeADead))
 	// i := 0
-	var total int = 0
+	var total int
 	for _, agent := range population.TypeA {
 		// allFitness[i] = agent.Fitness
 		// i++
@@ -187,7 +188,7 @@ func RecordPositions(population Population) {
 	record = append(record, newStep)
 }
 
-func writeJson(obj interface{}, filename string) {
+func writeJSON(obj interface{}, filename string) {
 	jsonEnc, err := json.Marshal(obj)
 	if err != nil {
 		fmt.Println(err)
@@ -204,22 +205,22 @@ func writeJson(obj interface{}, filename string) {
 }
 
 func WritePositions() {
-	writeJson(record, "output/Positions.json")
+	writeJSON(record, "output/Positions.json")
 	record = nil
 }
 
 func WriteStatistics() {
 	fmt.Println("Writing stats")
 
-	writeJson(nearbyA, "output/NearbyA.json")
-	writeJson(nearbyB, "output/NearbyB.json")
+	writeJSON(nearbyA, "output/NearbyA.json")
+	writeJSON(nearbyB, "output/NearbyB.json")
 
-	writeJson(geneticsA, "output/GeneticsA.json")
-	writeJson(geneticsB, "output/GeneticsB.json")
+	writeJSON(geneticsA, "output/GeneticsA.json")
+	writeJSON(geneticsB, "output/GeneticsB.json")
 
-	writeJson(typeADead, "output/DeadA.json")
-	writeJson(typeBDead, "output/DeadB.json")
+	// writeJSON(typeADead, "output/DeadA.json")
+	// writeJSON(typeBDead, "output/DeadB.json")
 
-	writeJson(typeAFitness, "output/FitnessA.json")
-	writeJson(typeBFitness, "output/FitnessB.json")
+	writeJSON(typeAFitness, "output/FitnessA.json")
+	writeJSON(typeBFitness, "output/FitnessB.json")
 }

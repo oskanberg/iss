@@ -19,41 +19,47 @@ func updateVectorsForPrey(agent, other *SimpleAgent, repulsion, orientation, att
 	difference := differenceVector.MagnitudeSquared()
 
 	angle := agent.Velocity.Dot(differenceVector.Normalised())
-	if difference < PREY_VIEW_DISTANCE_SQUARED && angle < BLIND_ANGLE {
+	if difference < PREY_VIEW_DISTANCE_SQUARED {
 		if agent.Family == other.Family {
 			behaviour = &agent.Genetics.SameSpecies
-			agent.visibleSame++
+			agent.nearbySame++
 		} else {
 			behaviour = &agent.Genetics.OtherSpecies
-			agent.visibleOther++
+			agent.nearbyOther++
 		}
 	} else {
+		// too far away
+		return
+	}
+
+	if angle < BLIND_ANGLE {
+		// behind us
 		return
 	}
 
 	if difference < STATIC_REPULSION_RADIUS_SQUARED {
 		// repulsion
-		*repulsion = *repulsion.Add(differenceVector.Normalised())
+		*repulsion = *repulsion.Subtract(differenceVector.Normalised())
 	} else if difference > STATIC_REPULSION_RADIUS_SQUARED && difference < behaviour.OrientationRadiusSq {
 		// orientation
 		*orientation = *orientation.Add(&other.Velocity)
 	} else if difference > behaviour.OrientationRadiusSq && difference < behaviour.AttractionRadiusSq {
 		// attraction
-		*attraction = *attraction.Subtract(differenceVector.Normalised())
+		*attraction = *attraction.Add(differenceVector.Normalised())
 	}
 }
 
 func updateVectorsForPredator(agent, other *SimpleAgent, antiPredator *vector.Vector2D) {
-	differenceVector := other.Position.WrappedDistanceVector(&agent.Position, SIMULATION_SPACE_SIZE, SIMULATION_SPACE_SIZE)
+	differenceVector := agent.Position.WrappedDistanceVector(&other.Position, SIMULATION_SPACE_SIZE, SIMULATION_SPACE_SIZE)
 	angle := agent.Velocity.Dot(differenceVector.Normalised())
 	if differenceVector.MagnitudeSquared() < PREY_VIEW_DISTANCE_SQUARED && angle < BLIND_ANGLE {
-		*antiPredator = *antiPredator.Add(differenceVector.Normalised())
+		*antiPredator = *antiPredator.Subtract(differenceVector.Normalised())
 	}
 }
 
 func movePrey(agent *SimpleAgent, population Population) {
-	agent.visibleOther = 0
-	agent.visibleSame = 0
+	agent.nearbySame = 0
+	agent.nearbyOther = 0
 
 	agentRepulsionVector = vector.NewVector2d(0, 0)
 	agentOrientationVector = vector.NewVector2d(0, 0)
@@ -78,32 +84,33 @@ func movePrey(agent *SimpleAgent, population Population) {
 		updateVectorsForPredator(agent, other, antiPredatorVector)
 	}
 
-	if agentRepulsionVector.MagnitudeSquared() > 0 {
-		agent.VelocityNext = *agentRepulsionVector.Normalised()
-	} else {
-		antiPred := antiPredatorVector.Normalised().Multiplied(agent.Genetics.PredatorRepulsion)
-		updateVector := agentOrientationVector.Normalised().Add(agentAttractionVector.Normalised()).Add(antiPred).Normalised()
+	// if agentRepulsionVector.MagnitudeSquared() > 0 {
+	// 	agent.VelocityNext = *agentRepulsionVector.Normalised()
+	// } else {
+	// antiPred := antiPredatorVector.Normalised().Multiplied(agent.Genetics.PredatorRepulsion)
+	antiPred := antiPredatorVector.Normalised()
+	updateVector := agentOrientationVector.Normalised().Add(agentAttractionVector.Normalised()).Add(antiPred).Add(agentRepulsionVector.Normalised()).Normalised()
 
-		angle := math.Atan2(agent.Velocity.X*updateVector.Y-agent.Velocity.Y*updateVector.X, agent.Velocity.X*updateVector.X+agent.Velocity.Y*updateVector.Y)
-		if math.Abs(angle) > MAX_TURN_ANGLE_PREY {
-			if angle > 0 {
-				updateVector = updateVector.Rotated(MAX_TURN_ANGLE_PREY - angle)
-			} else {
-				updateVector = updateVector.Rotated(-MAX_TURN_ANGLE_PREY - angle)
-			}
-		}
-
-		if updateVector.Magnitude() > 0 {
-			agent.VelocityNext = *updateVector.Normalised()
+	angle := math.Atan2(agent.Velocity.X*updateVector.Y-agent.Velocity.Y*updateVector.X, agent.Velocity.X*updateVector.X+agent.Velocity.Y*updateVector.Y)
+	if math.Abs(angle) > MAX_TURN_ANGLE_PREY {
+		if angle > 0 {
+			updateVector = updateVector.Rotated(MAX_TURN_ANGLE_PREY - angle)
 		} else {
-			agent.VelocityNext = agent.Velocity
+			updateVector = updateVector.Rotated(-MAX_TURN_ANGLE_PREY - angle)
 		}
 	}
+
+	if updateVector.Magnitude() > 0 {
+		agent.VelocityNext = *updateVector
+	} else {
+		agent.VelocityNext = agent.Velocity
+	}
+	// }
 }
 
 func movePredator(agent *SimpleAgent, population *Population) {
 	var differenceVector *vector.Vector2D
-	var updateVector *vector.Vector2D = vector.NewVector2d(1000, 0)
+	updateVector := vector.NewVector2d(1000, 0)
 	var nearest *SimpleAgent
 	var shortestDistance float64 = 10000000
 

@@ -1,6 +1,10 @@
 #!/bin/bash
 
-./plot_meanNearby.py output/NearbyA.json output/NearbyB.json 4000 2 &
-./plot_meanGenetics.py output/GeneticsA.json output/GeneticsB.json -alt &
-./plot_dead.py output/DeadA.json output/DeadB.json 2 &
-./draw.py output/Positions.json
+OUT_DIR=$1
+
+./plot_meanNearby.py $OUT_DIR/NearbyA.json $OUT_DIR/NearbyB.json 4000 3 &
+# ./plot_meanGenetics.py $OUT_DIR/GeneticsA.json $OUT_DIR/GeneticsB.json -alt &
+./test.py $OUT_DIR/GeneticsA.json $OUT_DIR/GeneticsB.json &
+# ./plot_dead.py $OUT_DIR/DeadA.json $OUT_DIR/DeadB.json 2 &
+# ./plot_Fitness.py $OUT_DIR/FitnessA.json $OUT_DIR/FitnessB.json 2 &
+./draw.py $OUT_DIR/Positions.json

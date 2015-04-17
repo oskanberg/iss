@@ -4,7 +4,7 @@ import pygame
 from pygame.locals import *
 import time, sys, json, math
 
-SCALE = 1
+SCALE = 2
 
 white = (255,255,255)
 black = (0,0,0)
@@ -17,7 +17,7 @@ class Pane(object):
     def __init__(self):
         pygame.init()
         pygame.display.set_caption('Simulation')
-        self.screen = pygame.display.set_mode((800*SCALE,800*SCALE), 0, 32)
+        self.screen = pygame.display.set_mode((400*SCALE,400*SCALE), 0, 32)
         self.screen.fill((white))
         pygame.display.flip()
 
@@ -35,6 +35,8 @@ class Pane(object):
             colour = red
         elif agent['t'] == 1:
             colour = blue
+        elif agent['t'] == 0:
+            colour = green
 
     	x = agent['p']['X'] * SCALE
     	y = agent['p']['Y'] * SCALE

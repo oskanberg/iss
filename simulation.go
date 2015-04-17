@@ -31,6 +31,7 @@ func (s *MovementParameters) Mutated() *MovementParameters {
 	delta = randFloat(-MUTATION_MOVEMENT, MUTATION_MOVEMENT)
 	newOrientation := math.Min(s.orientationRadius+delta, newAttraction)
 	newOrientation = math.Max(newOrientation, STATIC_REPULSION_RADIUS)
+
 	return &MovementParameters{
 		orientationRadius:   newOrientation,
 		attractionRadius:    newAttraction,
@@ -47,7 +48,7 @@ type BehaviourParameters struct {
 
 func (s *BehaviourParameters) Mutated() *BehaviourParameters {
 	dRepulsion := randFloat(-MUTATION_PREDATOR_REPULSION, MUTATION_PREDATOR_REPULSION)
-	newRepulsion := math.Mod(s.PredatorRepulsion+dRepulsion, 1.0)
+	newRepulsion := math.Min(s.PredatorRepulsion+dRepulsion, 1.0)
 	return &BehaviourParameters{
 		SameSpecies:       *s.SameSpecies.Mutated(),
 		OtherSpecies:      *s.OtherSpecies.Mutated(),
@@ -63,8 +64,8 @@ type SimpleAgent struct {
 	Family       int                  `json:"t"`
 	Genetics     *BehaviourParameters `json:"g"`
 
-	visibleSame  int
-	visibleOther int
+	nearbySame  int
+	nearbyOther int
 }
 
 type Population struct {
@@ -76,8 +77,10 @@ type Population struct {
 }
 
 func RandomMovementParameters() MovementParameters {
-	a := rand.Float64() * PREY_VIEW_DISTANCE
-	o := rand.Float64() * a
+	// a := rand.Float64() * PREY_VIEW_DISTANCE
+	// o := rand.Float64() * a
+	a := 5.0
+	o := 2.5
 	return MovementParameters{
 		orientationRadius:   o,
 		attractionRadius:    a,
@@ -104,8 +107,8 @@ func NewRandomSimpleAgent(family int) *SimpleAgent {
 		Fitness:      0,
 		Family:       family,
 		Genetics:     RandomBehaviours(),
-		visibleSame:  0,
-		visibleOther: 0,
+		nearbySame:   0,
+		nearbyOther:  0,
 	}
 }
 
@@ -118,10 +121,10 @@ func main() {
 		TypeA: make([]*SimpleAgent, SUBPOPULATION_SIZE),
 		TypeB: make([]*SimpleAgent, SUBPOPULATION_SIZE),
 	}
-	for i, _ := range population.TypeA {
+	for i := range population.TypeA {
 		population.TypeA[i] = NewRandomSimpleAgent(PREYA)
 	}
-	for i, _ := range population.TypeB {
+	for i := range population.TypeB {
 		population.TypeB[i] = NewRandomSimpleAgent(PREYB)
 	}
 
@@ -141,7 +144,7 @@ func main() {
 
 		fmt.Println("Predation")
 		population.Predators = make([]*SimpleAgent, PREDATOR_POPULATION_SIZE)
-		for i, _ := range population.Predators {
+		for i := range population.Predators {
 			population.Predators[i] = NewRandomSimpleAgent(PRED)
 		}
 
@@ -153,6 +156,8 @@ func main() {
 			UpdatePosition(population)
 			UpdateFitness(population)
 		}
+
+		RecordFitness(population)
 
 		if generation > 0 && generation%POSITION_LOG_INTERVAL == 0 {
 			WritePositions()
