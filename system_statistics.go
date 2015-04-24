@@ -18,11 +18,16 @@ type FloatRecord struct {
 	Same  float64 `json:"s"`
 }
 
-var geneticsA []GeneticsRecord = make([]GeneticsRecord, 0)
-var geneticsB []GeneticsRecord = make([]GeneticsRecord, 0)
+var thresholdA []FloatRecord
+var thresholdB []FloatRecord
 
-var nearbyA []FloatRecord = make([]FloatRecord, 0)
-var nearbyB []FloatRecord = make([]FloatRecord, 0)
+var geneticsA []GeneticsRecord
+var geneticsB []GeneticsRecord
+
+var nearbyA []FloatRecord
+var nearbyB []FloatRecord
+
+var iterationsRecorded int
 
 func meanNearby(subpopulation []*SimpleAgent) (float64, float64) {
 	if len(subpopulation) == 0 {
@@ -91,13 +96,53 @@ func getAverageGenetics(subpopulation []*SimpleAgent, dead []*SimpleAgent) Genet
 	return r
 }
 
-var iterationsRecorded int
+func RecordGeneticsAverage(population Population) {
+	geneRecord := getAverageGenetics(population.TypeA, population.TypeADead)
+	geneticsA = append(geneticsA, geneRecord)
+	geneRecord = getAverageGenetics(population.TypeB, population.TypeBDead)
+	geneticsB = append(geneticsB, geneRecord)
+}
 
-func RecordGenetics(population Population) {
-	record := getAverageGenetics(population.TypeA, population.TypeADead)
-	geneticsA = append(geneticsA, record)
-	record = getAverageGenetics(population.TypeB, population.TypeBDead)
-	geneticsB = append(geneticsB, record)
+func RecordThresholdGenetics(population Population) {
+	newCount := FloatRecord{Same: 0, Other: 0}
+	for _, agent := range population.TypeA {
+		if agent.Genetics.SameSpecies.attractionRadius > GENETIC_THRESHOLD {
+			newCount.Other++
+		}
+		if agent.Genetics.OtherSpecies.attractionRadius > GENETIC_THRESHOLD {
+			newCount.Other++
+		}
+	}
+	thresholdA = append(thresholdA, newCount)
+
+	newCount = FloatRecord{Same: 0, Other: 0}
+	for _, agent := range population.TypeA {
+		if agent.Genetics.SameSpecies.attractionRadius > GENETIC_THRESHOLD {
+			newCount.Other++
+		}
+		if agent.Genetics.OtherSpecies.attractionRadius > GENETIC_THRESHOLD {
+			newCount.Other++
+		}
+	}
+	thresholdB = append(thresholdB, newCount)
+}
+
+var detailGeneticsRecordA [][]BehaviourParameters
+var detailGeneticsRecordB [][]BehaviourParameters
+
+func RecordIndividualGenetics(population Population) {
+	newStep := make([]BehaviourParameters, len(population.TypeA))
+	lenA := len(population.TypeA)
+	for i, agent := range population.TypeA {
+		newStep[i] = *agent.Genetics
+	}
+	detailGeneticsRecordA = append(detailGeneticsRecordA, newStep)
+
+	newStep = make([]BehaviourParameters, len(population.TypeB))
+	for i, agent := range population.TypeB {
+		newStep[lenA+i] = *agent.Genetics
+	}
+	detailGeneticsRecordB = append(detailGeneticsRecordB, newStep)
 }
 
 func RecordNearby(population Population) {
@@ -173,8 +218,8 @@ var stepsRecorded int
 var newStep []SimpleAgent
 
 func RecordPositions(population Population) {
-	numDead := len(population.TypeADead) + len(population.TypeBDead)
-	newStep = make([]SimpleAgent, POPULATION_SIZE-numDead)
+	// numDead := len(population.TypeADead) + len(population.TypeBDead)
+	newStep = make([]SimpleAgent, len(population.TypeA)+len(population.TypeB)+len(population.Predators))
 	for i, agent := range population.TypeA {
 		newStep[i] = *agent
 	}
@@ -215,12 +260,18 @@ func WriteStatistics() {
 	writeJSON(nearbyA, "output/NearbyA.json")
 	writeJSON(nearbyB, "output/NearbyB.json")
 
+	writeJSON(thresholdA, "output/ThresholdGeneticsA.json")
+	writeJSON(thresholdB, "output/ThresholdGeneticsB.json")
+
+	// writeJSON(detailGeneticsRecordA, "output/DetailGeneticsA.json")
+	// writeJSON(detailGeneticsRecordB, "output/DetailGeneticsB.json")
+
 	writeJSON(geneticsA, "output/GeneticsA.json")
 	writeJSON(geneticsB, "output/GeneticsB.json")
 
 	// writeJSON(typeADead, "output/DeadA.json")
 	// writeJSON(typeBDead, "output/DeadB.json")
 
-	writeJSON(typeAFitness, "output/FitnessA.json")
-	writeJSON(typeBFitness, "output/FitnessB.json")
+	// writeJSON(typeAFitness, "output/FitnessA.json")
+	// writeJSON(typeBFitness, "output/FitnessB.json")
 }

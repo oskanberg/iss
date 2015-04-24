@@ -125,7 +125,7 @@ class Pane(object):
 	    	for position in step:
 	    		self.drawAgent(position)
 	    	pygame.display.flip()
-	    	time.sleep(0.01)
+	    	time.sleep(0.04)
 	    	self.screen.fill(white)	
     	# raw_input()
 

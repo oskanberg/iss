@@ -84,12 +84,15 @@ func movePrey(agent *SimpleAgent, population Population) {
 		updateVectorsForPredator(agent, other, antiPredatorVector)
 	}
 
-	// if agentRepulsionVector.MagnitudeSquared() > 0 {
-	// 	agent.VelocityNext = *agentRepulsionVector.Normalised()
-	// } else {
-	// antiPred := antiPredatorVector.Normalised().Multiplied(agent.Genetics.PredatorRepulsion)
-	antiPred := antiPredatorVector.Normalised()
-	updateVector := agentOrientationVector.Normalised().Add(agentAttractionVector.Normalised()).Add(antiPred).Add(agentRepulsionVector.Normalised()).Normalised()
+	var updateVector *vector.Vector2D
+
+	if agentRepulsionVector.MagnitudeSquared() > 0 {
+		updateVector = agentRepulsionVector.Normalised()
+	} else {
+		// antiPred := antiPredatorVector.Normalised().Multiplied(agent.Genetics.PredatorRepulsion)
+		antiPred := antiPredatorVector.Normalised()
+		updateVector = agentOrientationVector.Normalised().Add(agentAttractionVector.Normalised()).Add(antiPred).Add(agentRepulsionVector.Normalised()).Normalised()
+	}
 
 	angle := math.Atan2(agent.Velocity.X*updateVector.Y-agent.Velocity.Y*updateVector.X, agent.Velocity.X*updateVector.X+agent.Velocity.Y*updateVector.Y)
 	if math.Abs(angle) > MAX_TURN_ANGLE_PREY {
@@ -105,7 +108,6 @@ func movePrey(agent *SimpleAgent, population Population) {
 	} else {
 		agent.VelocityNext = agent.Velocity
 	}
-	// }
 }
 
 func movePredator(agent *SimpleAgent, population *Population) {

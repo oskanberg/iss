@@ -29,8 +29,9 @@ func (s *MovementParameters) Mutated() *MovementParameters {
 	newAttraction = math.Max(newAttraction, STATIC_REPULSION_RADIUS)
 
 	delta = randFloat(-MUTATION_MOVEMENT, MUTATION_MOVEMENT)
-	newOrientation := math.Min(s.orientationRadius+delta, newAttraction)
-	newOrientation = math.Max(newOrientation, STATIC_REPULSION_RADIUS)
+	// newOrientation := math.Min(s.orientationRadius+delta, newAttraction)
+	// newOrientation = math.Max(newOrientation, STATIC_REPULSION_RADIUS)
+	newOrientation := 2.5
 
 	return &MovementParameters{
 		orientationRadius:   newOrientation,
@@ -76,10 +77,21 @@ type Population struct {
 	TypeBDead []*SimpleAgent
 }
 
+func FixedAttractionTestParameters() MovementParameters {
+	a := 100.0
+	o := 2.5
+	return MovementParameters{
+		orientationRadius:   o,
+		attractionRadius:    a,
+		OrientationRadiusSq: o * o,
+		AttractionRadiusSq:  a * a,
+	}
+}
+
 func RandomMovementParameters() MovementParameters {
 	// a := rand.Float64() * PREY_VIEW_DISTANCE
 	// o := rand.Float64() * a
-	a := 5.0
+	a := 10.0
 	o := 2.5
 	return MovementParameters{
 		orientationRadius:   o,
@@ -91,7 +103,7 @@ func RandomMovementParameters() MovementParameters {
 
 func RandomBehaviours() *BehaviourParameters {
 	return &BehaviourParameters{
-		SameSpecies:       RandomMovementParameters(),
+		SameSpecies:       FixedAttractionTestParameters(),
 		OtherSpecies:      RandomMovementParameters(),
 		PredatorRepulsion: rand.Float64(),
 	}
@@ -130,17 +142,21 @@ func main() {
 
 	for generation := 0; generation < GENERATIONS; generation++ {
 		fmt.Println("Generation", generation)
-		RecordGenetics(population)
+		RecordGeneticsAverage(population)
+		RecordThresholdGenetics(population)
 
 		population.Predators = nil
 		for i := 0; i < WARM_UP_PERIOD; i++ {
-			RecordPositions(population)
+			// RecordPositions(population)
 			// don't record mmnp durinng warmup?
 			// RecordNearby(population)
 
 			Move(&population)
 			UpdatePosition(population)
 		}
+
+		// record mean nearby after warm up
+		RecordNearby(population)
 
 		fmt.Println("Predation")
 		population.Predators = make([]*SimpleAgent, PREDATOR_POPULATION_SIZE)
@@ -149,18 +165,17 @@ func main() {
 		}
 
 		for i := 0; i < (EVOLUTION_INTERVAL - WARM_UP_PERIOD); i++ {
-			RecordPositions(population)
-			RecordNearby(population)
+			// RecordPositions(population)
 
 			Move(&population)
 			UpdatePosition(population)
 			UpdateFitness(population)
 		}
 
-		RecordFitness(population)
+		// RecordFitness(population)
 
 		if generation > 0 && generation%POSITION_LOG_INTERVAL == 0 {
-			WritePositions()
+			// WritePositions()
 		}
 
 		if generation > 0 && generation%STATISTICS_LOG_INTERVAL == 0 {
@@ -169,6 +184,7 @@ func main() {
 
 		fmt.Println("End of generation")
 		Evolve(&population)
+		// fmt.Println(len(population.TypeA), len(population.TypeB))
 	}
 }
 

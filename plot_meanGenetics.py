@@ -28,9 +28,6 @@ for step in f1_data:
 
 
 # plot
-cols = ['Column {}'.format(col) for col in range(1, 3)]
-rows = ['Row {}'.format(row) for row in ['A', 'B']]
-
 fig, axes = plt.subplots(nrows=2, ncols=2)
 
 plt.subplot(221)
