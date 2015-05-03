@@ -2,7 +2,7 @@
 
 go build
 
-for i in {0..50}; do
+for i in {0..200}; do
 	tmpDir=$(mktemp -d)
 	baseTmpDir=$(basename $tmpDir)
 
@@ -15,8 +15,8 @@ for i in {0..50}; do
 	./iss
 
 	# create results dir, copy
-	mkdir ~/iss-data/assym-$baseTmpDir
-	mv output/* ~/iss-data/assym-$baseTmpDir
+	mkdir ~/iss-data/run3-$baseTmpDir
+	mv output/* ~/iss-data/run3-$baseTmpDir
 
 	# cleanup 
 	popd

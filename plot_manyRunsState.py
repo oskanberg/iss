@@ -33,7 +33,7 @@ for directory in sys.argv[1:]:
 	# y is B -> A
 	BtoA = [p['o'] for p in B[-1:]]
 
-	plt.scatter(AtoA, BtoA, marker='o', c=t20[nCol])
+	plt.scatter(AtoA, BtoA, marker='*', c=t20[nCol])
 
 	# x is A -> B
 	AtoB = [p['o'] for p in A[-1:]]

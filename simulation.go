@@ -103,8 +103,10 @@ func RandomMovementParameters() MovementParameters {
 
 func RandomBehaviours() *BehaviourParameters {
 	return &BehaviourParameters{
-		SameSpecies:       FixedAttractionTestParameters(),
-		OtherSpecies:      RandomMovementParameters(),
+		SameSpecies:  FixedAttractionTestParameters(),
+		OtherSpecies: FixedAttractionTestParameters(),
+		// SameSpecies:       RandomMovementParameters(),
+		// OtherSpecies:      RandomMovementParameters(),
 		PredatorRepulsion: rand.Float64(),
 	}
 }
