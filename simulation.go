@@ -29,9 +29,9 @@ func (s *MovementParameters) Mutated() *MovementParameters {
 	newAttraction = math.Max(newAttraction, STATIC_REPULSION_RADIUS)
 
 	delta = randFloat(-MUTATION_MOVEMENT, MUTATION_MOVEMENT)
-	// newOrientation := math.Min(s.orientationRadius+delta, newAttraction)
-	// newOrientation = math.Max(newOrientation, STATIC_REPULSION_RADIUS)
-	newOrientation := 2.5
+	newOrientation := math.Min(s.orientationRadius+delta, newAttraction)
+	newOrientation = math.Max(newOrientation, STATIC_REPULSION_RADIUS)
+	// newOrientation := 2.5
 
 	return &MovementParameters{
 		orientationRadius:   newOrientation,
@@ -78,7 +78,7 @@ type Population struct {
 }
 
 func FixedAttractionTestParameters() MovementParameters {
-	a := 100.0
+	a := 10.0
 	o := 2.5
 	return MovementParameters{
 		orientationRadius:   o,
@@ -167,7 +167,7 @@ func main() {
 		}
 
 		for i := 0; i < (EVOLUTION_INTERVAL - WARM_UP_PERIOD); i++ {
-			// RecordPositions(population)
+			RecordPositions(population)
 
 			Move(&population)
 			UpdatePosition(population)
@@ -177,7 +177,7 @@ func main() {
 		// RecordFitness(population)
 
 		if generation > 0 && generation%POSITION_LOG_INTERVAL == 0 {
-			// WritePositions()
+			WritePositions()
 		}
 
 		if generation > 0 && generation%STATISTICS_LOG_INTERVAL == 0 {
